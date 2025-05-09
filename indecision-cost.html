@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Indecision Cost</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f7fa;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100vh;
+      overflow: auto;
+    }
+    .container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      max-width: 100%;
+      width: 700px;
+      margin-top: 10px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .input-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 10px 0;
+    }
+    .input-group label {
+      font-weight: bold;
+      width: 160px;
+      font-size: 16px;
+      color: #555;
+      white-space: nowrap;
+    }
+    .input-group input[type="range"] {
+      width: 60%;
+      margin-left: 5px;
+    }
+    .input-group input[type="number"] {
+      width: 70px;
+      padding: 5px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+    }
+    .result, #totalWastage {
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 20px;
+      text-align: center;
+    }
+    #totalWastage {
+      margin-top: 10px;
+      font-size: 18px;
+    }
+    button {
+      padding: 10px 20px;
+      margin-top: 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    canvas {
+      margin-top: 20px;
+      max-width: 100%;
+    }
+    .input-group span {
+      font-size: 16px;
+      color: #888;
+    }
+    #resetTitle {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Meeting - Indecision Cost Calculator</h1>
+
+    <!-- Number of People -->
+    <div class="input-group">
+      <label for="numPeople">Number of Attendees:</label>
+      <input type="range" id="numPeople" min="1" max="50" value="5" oninput="updateValue('numPeople')">
+      <input type="number" id="numPeopleInput" value="5" oninput="syncInput('numPeopleInput', 'numPeople')">
+    </div>
+
+    <!-- Min Avg Daily Rate -->
+    <div class="input-group">
+      <label for="minRate">Min Daily Rate ($):</label>
+      <input type="range" id="minRate" min="100" max="2000" value="400" oninput="updateValue('minRate')">
+      <input type="number" id="minRateInput" value="400" oninput="syncInput('minRateInput', 'minRate')">
+    </div>
+
+    <!-- Max Avg Daily Rate -->
+    <div class="input-group">
+      <label for="maxRate">Max Daily Rate ($):</label>
+      <input type="range" id="maxRate" min="100" max="2000" value="800" oninput="updateValue('maxRate')">
+      <input type="number" id="maxRateInput" value="800" oninput="syncInput('maxRateInput', 'maxRate')">
+    </div>
+
+    <!-- Duration (hours) -->
+    <div class="input-group">
+      <label for="duration">Duration (hours):</label>
+      <input type="range" id="duration" min="0.5" max="8" step="0.5" value="1" oninput="updateValue('duration')">
+      <input type="number" id="durationInput" step="0.5" value="1" oninput="syncInput('durationInput', 'duration')">
+    </div>
+
+    <!-- Calculate Button -->
+    <button onclick="calculateAndTrack()">Calculate Indecision Cost</button>
+
+    <!-- Wastage Result -->
+    <div class="result" id="result"></div>
+
+    <!-- Chart -->
+    <canvas id="wasteChart" height="150"></canvas>
+
+    <!-- Total Wastage -->
+    <div id="totalWastage" class="result">
+      Total Indecision Cost Since Start: $0 - $0 (Avg: $0)
+    </div>
+
+    <!-- Reset History Button -->
+    <button onclick="resetHistory()">Reset History</button>
+  </div>
+
+  <script>
+    const timestamps = [];
+    const minWastes = [];
+    const maxWastes = [];
+    const avgWastes = [];
+
+    function updateValue(id) {
+      const value = document.getElementById(id).value;
+      document.getElementById(id + "Input").value = value;
+    }
+
+    function syncInput(inputId, rangeId) {
+      const value = document.getElementById(inputId).value;
+      document.getElementById(rangeId).value = value;
+    }
+
+    function calculateCost() {
+      const people = parseInt(document.getElementById('numPeople').value);
+      const minDailyRate = parseFloat(document.getElementById('minRate').value);
+      const maxDailyRate = parseFloat(document.getElementById('maxRate').value);
+      const duration = parseFloat(document.getElementById('duration').value);
+
+      const minHourly = minDailyRate / 8;
+      const maxHourly = maxDailyRate / 8;
+
+      const minCost = people * minHourly * duration;
+      const maxCost = people * maxHourly * duration;
+      const avgCost = (minCost + maxCost) / 2;
+
+      document.getElementById('result').innerText =
+        `Estimated Wastage: $${minCost.toFixed(2)} - $${maxCost.toFixed(2)} (Avg: $${avgCost.toFixed(2)})`;
+
+      return { min: minCost, max: maxCost, avg: avgCost };
+    }
+
+    const ctx = document.getElementById('wasteChart').getContext('2d');
+    const wasteChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: timestamps,
+        datasets: [
+          {
+            label: 'Min Wastage ($)',
+            data: minWastes,
+            borderColor: 'green',
+            fill: false
+          },
+          {
+            label: 'Avg Wastage ($)',
+            data: avgWastes,
+            borderColor: 'orange',
+            fill: false
+          },
+          {
+            label: 'Max Wastage ($)',
+            data: maxWastes,
+            borderColor: 'red',
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Indecision Cost Over Time'
+          }
+        }
+      }
+    });
+
+    function saveToLocalStorage() {
+      const history = timestamps.map((time, i) => ({
+        time,
+        min: minWastes[i],
+        max: maxWastes[i],
+        avg: avgWastes[i]
+      }));
+      localStorage.setItem('indecisionWasteHistory', JSON.stringify(history));
+      updateTotalWastage();
+    }
+
+    function loadFromLocalStorage() {
+      const history = JSON.parse(localStorage.getItem('indecisionWasteHistory')) || [];
+      history.forEach(item => {
+        timestamps.push(item.time);
+        minWastes.push(item.min);
+        maxWastes.push(item.max);
+        avgWastes.push(item.avg);
+      });
+      wasteChart.update();
+      updateTotalWastage();
+    }
+
+    function calculateAndTrack() {
+      const { min, max, avg } = calculateCost();
+
+      const timestamp = new Date().toLocaleString();
+      timestamps.push(timestamp);
+      minWastes.push(min);
+      maxWastes.push(max);
+      avgWastes.push(avg);
+
+      wasteChart.update();
+      saveToLocalStorage();
+    }
+
+    function updateTotalWastage() {
+      const totalMin = minWastes.reduce((acc, curr) => acc + curr, 0);
+      const totalMax = maxWastes.reduce((acc, curr) => acc + curr, 0);
+      const totalAvg = avgWastes.reduce((acc, curr) => acc + curr, 0);
+      
+      const totalAverageWastage = totalAvg.toFixed(2);
+
+      document.getElementById('totalWastage').innerText =
+        `Total Indecision Cost Since Start: $${totalMin.toFixed(2)} - $${totalMax.toFixed(2)} (Avg: $${totalAverageWastage})`;
+    }
+
+    function resetHistory() {
+      localStorage.removeItem('indecisionWasteHistory');
+      timestamps.length = 0;
+      minWastes.length = 0;
+      maxWastes.length = 0;
+      avgWastes.length = 0;
+      wasteChart.update();
+      updateTotalWastage();
+    }
+
+    // Load history if available
+    loadFromLocalStorage();
+  </script>
+</body>
+</html>
