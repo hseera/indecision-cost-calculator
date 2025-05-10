@@ -3,33 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Indecision Cost</title>
+  <title>Indecision Cost - Tabs</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
       background-color: #f4f7fa;
-      color: #333;
       margin: 0;
       padding: 20px;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
-      height: 100vh;
-      overflow: auto;
     }
     .container {
       background-color: white;
       padding: 20px;
       border-radius: 10px;
+      max-width: 800px;
+      width: 100%;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      max-width: 100%;
-      width: 700px;
-      margin-top: 10px;
     }
     h1 {
       text-align: center;
-      color: #333;
       margin-bottom: 20px;
     }
     .input-group {
@@ -39,245 +33,238 @@
       margin: 10px 0;
     }
     .input-group label {
-      font-weight: bold;
       width: 160px;
-      font-size: 16px;
-      color: #555;
-      white-space: nowrap;
+      font-weight: bold;
     }
     .input-group input[type="range"] {
       width: 60%;
-      margin-left: 5px;
     }
     .input-group input[type="number"] {
-      width: 70px;
-      padding: 5px;
-      font-size: 14px;
-      border-radius: 5px;
-      border: 1px solid #ddd;
-    }
-    .result, #totalWastage {
-      font-size: 16px;
-      font-weight: bold;
-      margin-top: 20px;
-      text-align: center;
-    }
-    #totalWastage {
-      margin-top: 10px;
-      font-size: 18px;
+      width: 80px;
     }
     button {
-      padding: 10px 20px;
-      margin-top: 20px;
+      padding: 10px;
       background-color: #007bff;
       color: white;
       border: none;
       border-radius: 5px;
-      font-size: 16px;
+      margin-top: 15px;
       cursor: pointer;
       width: 100%;
     }
     button:hover {
       background-color: #0056b3;
     }
-    canvas {
-      margin-top: 20px;
-      max-width: 100%;
+    .tabs {
+      display: flex;
+      margin-bottom: 10px;
     }
-    .input-group span {
-      font-size: 16px;
-      color: #888;
-    }
-    #resetTitle {
-      margin-top: 30px;
-      text-align: center;
-      font-size: 18px;
+    .tablink {
+      flex: 1;
+      padding: 10px;
+      background-color: #ccc;
+      border: none;
+      cursor: pointer;
       font-weight: bold;
+    }
+    .tablink.active {
+      background-color: #007bff;
+      color: white;
+    }
+    .tabcontent {
+      display: none;
+    }
+    .tabcontent.active {
+      display: block;
+    }
+    #result, #totalWastage {
+      text-align: center;
+      font-weight: bold;
+      margin-top: 15px;
     }
   </style>
 </head>
 <body>
-
   <div class="container">
-    <h1>Meeting - Indecision Cost Calculator</h1>
+    <h1>Indecision Cost Calculator</h1>
 
-    <!-- Number of People -->
     <div class="input-group">
-      <label for="numPeople">Number of Attendees:</label>
+      <label for="numPeople">Number of People:</label>
       <input type="range" id="numPeople" min="1" max="50" value="5" oninput="updateValue('numPeople')">
       <input type="number" id="numPeopleInput" value="5" oninput="syncInput('numPeopleInput', 'numPeople')">
     </div>
 
-    <!-- Min Avg Daily Rate -->
     <div class="input-group">
       <label for="minRate">Min Daily Rate ($):</label>
       <input type="range" id="minRate" min="100" max="2000" value="400" oninput="updateValue('minRate')">
       <input type="number" id="minRateInput" value="400" oninput="syncInput('minRateInput', 'minRate')">
     </div>
 
-    <!-- Max Avg Daily Rate -->
     <div class="input-group">
       <label for="maxRate">Max Daily Rate ($):</label>
       <input type="range" id="maxRate" min="100" max="2000" value="800" oninput="updateValue('maxRate')">
       <input type="number" id="maxRateInput" value="800" oninput="syncInput('maxRateInput', 'maxRate')">
     </div>
 
-    <!-- Duration (hours) -->
     <div class="input-group">
-      <label for="duration">Duration (hours):</label>
+      <label for="duration">Duration (hrs):</label>
       <input type="range" id="duration" min="0.5" max="8" step="0.5" value="1" oninput="updateValue('duration')">
       <input type="number" id="durationInput" step="0.5" value="1" oninput="syncInput('durationInput', 'duration')">
     </div>
 
-    <!-- Calculate Button -->
     <button onclick="calculateAndTrack()">Calculate Indecision Cost</button>
 
-    <!-- Wastage Result -->
-    <div class="result" id="result"></div>
+    <div id="result"></div>
 
-    <!-- Chart -->
-    <canvas id="wasteChart" height="150"></canvas>
-
-    <!-- Total Wastage -->
-    <div id="totalWastage" class="result">
-      Total Indecision Cost Since Start: $0 - $0 (Avg: $0)
+    <div class="tabs">
+      <button class="tablink active" onclick="switchTab('enterprise')">Enterprise</button>
+      <button class="tablink" onclick="switchTab('greenfield')">Greenfield</button>
     </div>
 
-    <!-- Reset History Button -->
+    <div id="tab-enterprise" class="tabcontent active">
+      <canvas id="chart-enterprise" height="150"></canvas>
+    </div>
+
+    <div id="tab-greenfield" class="tabcontent">
+      <canvas id="chart-greenfield" height="150"></canvas>
+    </div>
+
+    <div id="totalWastage"></div>
+
     <button onclick="resetHistory()">Reset History</button>
   </div>
 
   <script>
-    const timestamps = [];
-    const minWastes = [];
-    const maxWastes = [];
-    const avgWastes = [];
+    const datasets = {
+      enterprise: { timestamps: [], min: [], max: [], avg: [], meta: [], chart: null },
+      greenfield: { timestamps: [], min: [], max: [], avg: [], meta: [], chart: null }
+    };
+    let currentTab = 'enterprise';
 
     function updateValue(id) {
-      const value = document.getElementById(id).value;
-      document.getElementById(id + "Input").value = value;
+      const val = document.getElementById(id).value;
+      document.getElementById(id + 'Input').value = val;
     }
 
     function syncInput(inputId, rangeId) {
-      const value = document.getElementById(inputId).value;
-      document.getElementById(rangeId).value = value;
+      const val = document.getElementById(inputId).value;
+      document.getElementById(rangeId).value = val;
     }
 
-    function calculateCost() {
-      const people = parseInt(document.getElementById('numPeople').value);
-      const minDailyRate = parseFloat(document.getElementById('minRate').value);
-      const maxDailyRate = parseFloat(document.getElementById('maxRate').value);
-      const duration = parseFloat(document.getElementById('duration').value);
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tablink').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tabcontent').forEach(div => div.classList.remove('active'));
+      document.querySelector(`[onclick*="${tab}"]`).classList.add('active');
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      updateTotal();
+    }
 
-      const minHourly = minDailyRate / 8;
-      const maxHourly = maxDailyRate / 8;
+    function calculateAndTrack() {
+      const minRate = +document.getElementById('minRate').value;
+      const maxRate = +document.getElementById('maxRate').value;
+      if (minRate > maxRate) {
+        alert("Min Daily Rate cannot be more than Max Daily Rate.");
+        return;
+      }
 
-      const minCost = people * minHourly * duration;
-      const maxCost = people * maxHourly * duration;
+      const people = +document.getElementById('numPeople').value;
+      const duration = +document.getElementById('duration').value;
+      const minCost = people * (minRate / 8) * duration;
+      const maxCost = people * (maxRate / 8) * duration;
       const avgCost = (minCost + maxCost) / 2;
 
       document.getElementById('result').innerText =
         `Estimated Wastage: $${minCost.toFixed(2)} - $${maxCost.toFixed(2)} (Avg: $${avgCost.toFixed(2)})`;
 
-      return { min: minCost, max: maxCost, avg: avgCost };
+      const now = new Date().toLocaleString();
+      const d = datasets[currentTab];
+      d.timestamps.push(now);
+      d.min.push(minCost);
+      d.max.push(maxCost);
+      d.avg.push(avgCost);
+      d.meta.push({ people, minRate, maxRate, duration });
+
+      d.chart.update();
+      saveHistory();
+      updateTotal();
     }
 
-    const ctx = document.getElementById('wasteChart').getContext('2d');
-    const wasteChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: timestamps,
-        datasets: [
-          {
-            label: 'Min Wastage ($)',
-            data: minWastes,
-            borderColor: 'green',
-            fill: false
-          },
-          {
-            label: 'Avg Wastage ($)',
-            data: avgWastes,
-            borderColor: 'orange',
-            fill: false
-          },
-          {
-            label: 'Max Wastage ($)',
-            data: maxWastes,
-            borderColor: 'red',
-            fill: false
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          title: {
-            display: true,
-            text: 'Indecision Cost Over Time'
-          }
-        }
-      }
-    });
-
-    function saveToLocalStorage() {
-      const history = timestamps.map((time, i) => ({
-        time,
-        min: minWastes[i],
-        max: maxWastes[i],
-        avg: avgWastes[i]
-      }));
-      localStorage.setItem('indecisionWasteHistory', JSON.stringify(history));
-      updateTotalWastage();
-    }
-
-    function loadFromLocalStorage() {
-      const history = JSON.parse(localStorage.getItem('indecisionWasteHistory')) || [];
-      history.forEach(item => {
-        timestamps.push(item.time);
-        minWastes.push(item.min);
-        maxWastes.push(item.max);
-        avgWastes.push(item.avg);
-      });
-      wasteChart.update();
-      updateTotalWastage();
-    }
-
-    function calculateAndTrack() {
-      const { min, max, avg } = calculateCost();
-
-      const timestamp = new Date().toLocaleString();
-      timestamps.push(timestamp);
-      minWastes.push(min);
-      maxWastes.push(max);
-      avgWastes.push(avg);
-
-      wasteChart.update();
-      saveToLocalStorage();
-    }
-
-    function updateTotalWastage() {
-      const totalMin = minWastes.reduce((acc, curr) => acc + curr, 0);
-      const totalMax = maxWastes.reduce((acc, curr) => acc + curr, 0);
-      const totalAvg = avgWastes.reduce((acc, curr) => acc + curr, 0);
-      
-      const totalAverageWastage = totalAvg.toFixed(2);
-
+    function updateTotal() {
+      const d = datasets[currentTab];
+      const minSum = d.min.reduce((a, b) => a + b, 0);
+      const maxSum = d.max.reduce((a, b) => a + b, 0);
+      const avgSum = d.avg.reduce((a, b) => a + b, 0);
       document.getElementById('totalWastage').innerText =
-        `Total Indecision Cost Since Start: $${totalMin.toFixed(2)} - $${totalMax.toFixed(2)} (Avg: $${totalAverageWastage})`;
+        `Total Indecision Cost (${currentTab}): $${minSum.toFixed(2)} - $${maxSum.toFixed(2)} (Avg: $${avgSum.toFixed(2)})`;
+    }
+
+    function initCharts() {
+      ['enterprise', 'greenfield'].forEach(id => {
+        const ctx = document.getElementById('chart-' + id).getContext('2d');
+        datasets[id].chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: datasets[id].timestamps,
+            datasets: [
+              { label: 'Min', data: datasets[id].min, borderColor: 'green', fill: false },
+              { label: 'Avg', data: datasets[id].avg, borderColor: 'orange', fill: false },
+              { label: 'Max', data: datasets[id].max, borderColor: 'red', fill: false }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  afterLabel: ctx => {
+                    const i = ctx.dataIndex;
+                    const m = datasets[id].meta[i];
+                    return [`People: ${m.people}`, `Min Rate: $${m.minRate}`, `Max Rate: $${m.maxRate}`, `Duration: ${m.duration} hrs`];
+                  }
+                }
+              },
+              title: { display: true, text: `Indecision Cost Over Time - ${id}` }
+            }
+          }
+        });
+      });
+    }
+
+    function saveHistory() {
+      const h = {};
+      for (const k in datasets) {
+        h[k] = datasets[k].timestamps.map((t, i) => ({
+          t, min: datasets[k].min[i], max: datasets[k].max[i], avg: datasets[k].avg[i], meta: datasets[k].meta[i]
+        }));
+      }
+      localStorage.setItem("indecisionCostTabs", JSON.stringify(h));
+    }
+
+    function loadHistory() {
+      const h = JSON.parse(localStorage.getItem("indecisionCostTabs") || "{}");
+      for (const k in h) {
+        h[k].forEach(pt => {
+          datasets[k].timestamps.push(pt.t);
+          datasets[k].min.push(pt.min);
+          datasets[k].max.push(pt.max);
+          datasets[k].avg.push(pt.avg);
+          datasets[k].meta.push(pt.meta);
+        });
+      }
     }
 
     function resetHistory() {
-      localStorage.removeItem('indecisionWasteHistory');
-      timestamps.length = 0;
-      minWastes.length = 0;
-      maxWastes.length = 0;
-      avgWastes.length = 0;
-      wasteChart.update();
-      updateTotalWastage();
+      localStorage.removeItem("indecisionCostTabs");
+      for (const k in datasets) {
+        ['timestamps', 'min', 'max', 'avg', 'meta'].forEach(arr => datasets[k][arr].length = 0);
+        datasets[k].chart.update();
+      }
+      updateTotal();
     }
 
-    // Load history if available
-    loadFromLocalStorage();
+    loadHistory();
+    window.onload = initCharts;
   </script>
 </body>
 </html>
