@@ -3,8 +3,7 @@
 **Estimate the hidden cost of indecision in meetings.**  
 This simple, interactive web app calculates the financial impact of delayed decisions by estimating time and salary wastage in meetings.
 
-![screenshot](https://github.com/hseera/indecision-cost-calculator/blob/main/assets/indecision.png)  <!-- Replace with actual screenshot URL if available -->
-
+![screenshot](https://github.com/hseera/indecision-cost-calculator/blob/main/assets/indecision.png) 
 ## 🔍 Features
 
 - 🎚 Adjustable parameters: number of attendees, hourly rates, and meeting duration
