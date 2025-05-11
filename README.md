@@ -12,7 +12,7 @@ This simple, interactive web app calculates the financial impact of delayed deci
 - 🗂 Tabbed interface to switch between **Enterprise** and **Greenfield** project graphs
 - ⚠️ Input validation to ensure Min Daily Rate is not more than Max Daily Rate
 - 🧹 Reset button to clear historical data
-- 📱 Responsive and clean UI – works well on desktop
+- 📱 Responsive and clean UI – works well on desktop (Tested on Windows OS).
 
 ## 🚀 Getting Started
 
